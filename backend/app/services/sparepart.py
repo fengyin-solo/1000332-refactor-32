@@ -3,13 +3,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services import sparepart_rules as rules
 from app.store import store
 
 MODULE = "sparepart"
 REQUIRED_FIELDS = ["领用单号", "备件名称", "备件规格"]
-STATUS_ORDER = ["待审批", "已批准", "已领用", "已退回"]
-ACTION_RULES = {"批准领用": "已批准", "确认发放": "已领用", "退回备件": "已退回"}
-NEGATIVE_ACTIONS = []
+STATUS_ORDER = rules.STATUS_ORDER
+ACTION_RULES = rules.ACTION_TARGETS
+NEGATIVE_ACTIONS = rules.NEGATIVE_ACTIONS
 
 
 class SparepartService:
@@ -25,7 +26,7 @@ class SparepartService:
         if keyword:
             rows = [row for row in rows if keyword in str(row.get("领用单号", ""))]
         if status:
-            rows = [row for row in rows if row.get("status") == status]
+            rows = [row for row in rows if rules.matches_list_status(row, status)]
         total = len(rows)
         start = max(page - 1, 0) * size
         return rows[start:start + size], total
@@ -40,7 +41,7 @@ class SparepartService:
         rows = store.rows(MODULE)
         entry = {"id": max((int(row.get("id", 0)) for row in rows), default=0) + 1}
         entry.update({field: values.get(field) for field in REQUIRED_FIELDS})
-        entry["status"] = STATUS_ORDER[0]
+        entry["status"] = rules.STATUS_PENDING
         entry["pending"] = True
         entry["abnormal"] = False
         rows.append(entry)
@@ -50,12 +51,4 @@ class SparepartService:
         entry = store.find(MODULE, entry_id)
         if entry is None:
             return None, f"备件领用单 {entry_id} 不存在或已归档"
-        if action not in ACTION_RULES:
-            return None, f"动作「{action}」不属于备件领用可执行范围"
-        target = ACTION_RULES[action]
-        if target not in STATUS_ORDER:
-            return None, f"目标状态「{target}」不在允许的状态序列里"
-        entry["status"] = target
-        entry["pending"] = target != STATUS_ORDER[-1]
-        entry["abnormal"] = action in NEGATIVE_ACTIONS
-        return entry, f"备件领用单已{action}"
+        return rules.apply_action(entry, str(action))
