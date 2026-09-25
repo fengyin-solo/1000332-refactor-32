@@ -6,20 +6,17 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas import ActionResult, EntryPayload, PageResult
-from app.services.sparepart import SparepartService
+from app.services.sparepart import STATUS_ORDER, SparepartService
 
 router = APIRouter(prefix="/api/sparepart", tags=["备件领用"])
 
 service = SparepartService()
 
-LIST_FIELDS = ["领用单号", "备件名称", "备件规格", "领用数量", "领用人员", "领用日期", "所属班组", "领用状态"]
-STATUSES = ["待审批", "已批准", "已领用", "已退回"]
-
 
 @router.get("", response_model=PageResult[dict])
 def list_entries(
     keyword: str | None = Query(default=None, description="按领用单号检索"),
-    status: str | None = Query(default=None, description="待审批、已批准、已领用、已退回"),
+    status: str | None = Query(default=None, description="、".join(STATUS_ORDER)),
     page: int = 1,
     size: int = 20,
 ) -> PageResult[dict]:

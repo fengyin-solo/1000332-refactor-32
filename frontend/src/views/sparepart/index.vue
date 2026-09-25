@@ -72,7 +72,6 @@ type Row = Record<string, string | number | null>
 const ENDPOINT = '/api/sparepart'
 const columns = ["领用单号", "备件名称", "备件规格", "领用数量", "领用人员", "领用日期", "所属班组", "领用状态"]
 const actions = ["批准领用", "确认发放", "退回备件"]
-const statuses = ["待审批", "已批准", "已领用", "已退回"]
 const stats = [{"label": "待审批领用", "value": 0}, {"label": "本月领用单", "value": 0}, {"label": "退回单数", "value": 0}]
 
 const rows = ref<Row[]>([])
